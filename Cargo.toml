@@ -1,0 +1,12 @@
+[workspace]
+resolver = "3"
+members = [
+    "api-gateway",
+    "tracking-service",
+    "notification-service",
+    "proto-hub"
+]
+
+[workspace.dependencies]
+tonic = { version = "0.14", features = ["codegen", "transport", "server"] }
+tokio = { version = "1", features = ["full"]}

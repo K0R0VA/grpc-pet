@@ -1,0 +1,25 @@
+syntax = "proto3";
+package low_fare;
+
+service TrackingService {
+  rpc AddAlert (AlertRequest) returns (AlertResponse);
+  rpc WatchPrices (Empty) returns (stream PriceUpdate);
+}
+
+message AlertRequest {
+  string user_id = 1;
+  string route = 2;      
+  float target_price = 3; 
+}
+
+message AlertResponse {
+  bool success = 1;
+  string alert_id = 2;
+}
+
+message PriceUpdate {
+  string route = 1;
+  float current_price = 2;
+}
+
+message Empty {}
