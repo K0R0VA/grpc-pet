@@ -1,6 +1,7 @@
 use std::pin::Pin;
+use std::time::Duration;
 
-use chrono::{Duration, Utc};
+use chrono::{Utc};
 use entities::subscription::SubscriptionType;
 use proto_hub::tracking::{AlertRequest, AlertResponse, PriceUpdate, RouteRequest, SubscriptionRequest, SubscriptionResponse};
 use proto_hub::tracking::tracking_service_server::TrackingService;
@@ -77,7 +78,7 @@ impl TrackingService for Tracker {
         let database = self.database.clone();
         tokio::spawn(async move {
             loop {
-                let now = Utc::now() - Duration::seconds(5);
+                let now = Utc::now() - chrono::Duration::seconds(5);
                 let routes = entities::route::Entity::find()
                     // updated_at > now - 5s
                     .filter(entities::route::Column::UpdatedAt.gt(now))
@@ -105,6 +106,7 @@ impl TrackingService for Tracker {
                         break;
                     }
                 }
+                tokio::time::sleep(Duration::from_secs(5)).await;
             }
         });
 

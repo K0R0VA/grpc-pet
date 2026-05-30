@@ -1,17 +1,16 @@
 [package]
-name = "notification-service"
+name = "price-receiver-service"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+chrono.workspace = true
 tonic.workspace = true
 tokio.workspace = true
 tokio-stream.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-chrono.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 sea-orm.workspace = true
-rdkafka.workspace = true
+proto-hub = { path = "../proto-hub" }
 entities = { path = "../entities" }
 utils = { path = "../utils" }
-proto-hub = { path = "../proto-hub" }

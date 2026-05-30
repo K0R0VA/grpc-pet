@@ -1,5 +1,5 @@
 [package]
-name = "notification-service"
+name = "telegram-service"
 version = "0.1.0"
 edition = "2024"
 
@@ -12,6 +12,7 @@ serde_json.workspace = true
 chrono.workspace = true
 sea-orm.workspace = true
 rdkafka.workspace = true
+teloxide = { version = "0.13", features = ["macros"] }
 entities = { path = "../entities" }
 utils = { path = "../utils" }
 proto-hub = { path = "../proto-hub" }

@@ -1,0 +1,14 @@
+syntax = "proto3";
+package price_receiver;
+
+service PriceReceiverService {
+  rpc ReceivePrices (stream PriceUpdateRequest) returns (stream PriceUpdateResponse);
+}
+
+message PriceUpdateRequest {
+  int32 route_id = 1;     
+  float new_price = 2;     
+}
+
+message PriceUpdateResponse {
+}

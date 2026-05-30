@@ -24,11 +24,21 @@ pub enum Relation {
         has_many = "super::alert::Entity"
     )]
     Alerts,
+    #[sea_orm(
+        has_many = "super::subscription::Entity"
+    )]
+    Subscriptions,
 }
 
 impl Related<super::alert::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Alerts.def()
+    }
+}
+
+impl Related<super::subscription::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Subscriptions.def()
     }
 }
 

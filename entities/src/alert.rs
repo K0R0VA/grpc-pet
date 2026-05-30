@@ -26,6 +26,22 @@ pub enum Relation {
     Routes,
 }
 
+#[derive(Debug)]
+pub struct AlertSubscription;
+
+impl Linked for AlertSubscription {
+    type FromEntity = Entity;
+
+    type ToEntity = super::subscription::Entity;
+
+    fn link(&self) -> Vec<RelationDef> {
+        vec![
+            Relation::Users.def().rev(),
+            crate::user::Relation::Subscriptions.def()
+        ]
+    }
+}
+
 impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Users.def()

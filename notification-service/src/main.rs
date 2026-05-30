@@ -1,12 +1,17 @@
+use entities::alert::AlertSubscription;
 use proto_hub::tracking::tracking_service_client::TrackingServiceClient;
 use proto_hub::tracking::RouteRequest;
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::{FutureProducer, FutureRecord};
+use sea_orm::{ColumnTrait, Database, EntityTrait, QueryFilter};
+use utils::from_env;
 use std::time::Duration;
 use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let database_url = from_env("DATABASE_URL")?;
+    let database = Database::connect(database_url).await?;
     println!("[Notification Service] Starting background worker...");
 
     // 1. Инициализируем продюсера Kafka
@@ -31,31 +36,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Some(received) = price_stream.next().await {
         match received {
             Ok(price_update) => {
-                println!(
-                    "[gRPC Stream Received] Route: {}, Current Price: {}",
-                    price_update.route, price_update.current_price
-                );
+                let alerts = entities::alert::Entity::find()
+                    .find_with_linked(AlertSubscription)
+                    .filter(entities::alert::Column::TargetPrice.gte(price_update.current_price))
+                    .filter(entities::subscription::Column::Enabled.eq(true))
+                    .all(&database)
+                    .await?;
+                for (alert, subscriptions) in alerts {
+                    for subscription in subscriptions {
+                        let payload = serde_json::json!({
+                            "user_id": alert.user_id,
+                            "route_id": price_update.route,
+                            "price": price_update.current_price,
+                            "timestamp": chrono::Utc::now().to_rfc3339()
+                        })
+                        .to_string();
 
-                // Сериализуем данные в JSON-строку для отправки в Kafka
-                let payload = serde_json::json!({
-                    "route_id": price_update.route,
-                    "price": price_update.current_price,
-                    "timestamp": chrono::Utc::now().to_rfc3339()
-                })
-                .to_string();
-
-                // Формируем запись для Kafka (топик: "price-alerts")
-                let record = FutureRecord {
-                    key: Some(&price_update.route),
-                    topic: "price-alerts",
-                    payload: Some(&payload),
-                    headers: None,
-                    partition: None,
-                    timestamp: None
-                }; // Ключ топика — id маршрута для корректного партиционирования
-
-                // Отправляем сообщение в Кафку асинхронно
-                producer.send(record, Duration::from_secs(0)).await.map_err(|(e, _)| e)?;
+                        // Формируем запись для Kafka (топик: "price-alerts")
+                        let record = FutureRecord {
+                            key: Some(&price_update.route),
+                            topic: &format!("price-alerts-{:?}", subscription.subscription_type),
+                            payload: Some(&payload),
+                            headers: None,
+                            timestamp: None,
+                            partition: None
+                        }; // Ключ топика — id маршрута для корректного партиционирования
+                        producer.send(record, Duration::from_secs(0)).await.map_err(|(e, _)| e)?;
+                    }
+                }
             }
             Err(status) => {
                 println!("[gRPC Stream Error] Status: {:?}", status);
