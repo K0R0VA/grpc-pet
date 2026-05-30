@@ -1,8 +1,10 @@
 use std::pin::Pin;
 
-use proto_hub::tracking::{AlertRequest, AlertResponse, PriceUpdate, RouteRequest};
+use chrono::{Duration, Utc};
+use entities::subscription::SubscriptionType;
+use proto_hub::tracking::{AlertRequest, AlertResponse, PriceUpdate, RouteRequest, SubscriptionRequest, SubscriptionResponse};
 use proto_hub::tracking::tracking_service_server::TrackingService;
-use sea_orm::{ActiveModelTrait, Database, DatabaseConnection, EntityTrait, IntoActiveModel};
+use sea_orm::{ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter};
 use tonic::{Request, Response, Status};
 use utils::{Error, from_env};
 
@@ -23,7 +25,26 @@ impl Tracker {
 #[tonic::async_trait]
 impl TrackingService for Tracker {
     type WatchPricesStream = Pin<Box<dyn tokio_stream::Stream<Item = Result<PriceUpdate, Status>> + Send>>;
-
+    async fn set_subscription(&self, request: tonic::Request<proto_hub::tracking::SubscriptionRequest>) ->  Result<tonic::Response<proto_hub::tracking::SubscriptionResponse>, tonic::Status> {
+        let SubscriptionRequest {subscription_type, user_id, enabled} = request.into_inner();
+        let subscription_type = match subscription_type {
+            1 => SubscriptionType::Telegram,
+            2 => SubscriptionType::Email,
+            3 => SubscriptionType::Sms,
+            _ => return Err(Status::unknown("subscription_type"))
+        };
+        let subscription = entities::subscription::ActiveModel {
+            subscription_type: sea_orm::ActiveValue::Set(subscription_type),
+            user_id: sea_orm::ActiveValue::Set(user_id),
+            enabled: sea_orm::ActiveValue::Set(enabled),
+        };
+        subscription
+            .into_active_model()
+            .insert(&self.database).await
+            .map_err(|e| Status::internal(e.to_string()))?;
+        tracing::info!("[RPC Server] Processing AddAlert for user: {}", user_id);
+        Ok(Response::new(SubscriptionResponse {}))
+    }
     async fn add_alert(
         &self,
         request: Request<AlertRequest>,
@@ -39,50 +60,50 @@ impl TrackingService for Tracker {
             .into_active_model()
             .insert(&self.database).await
             .map_err(|e| Status::internal(e.to_string()))?;
-        
         tracing::info!("[RPC Server] Processing AddAlert for user: {}", user_id);
-
         let response = AlertResponse {
             success: true,
             alert_id: alert.id,
         };
-
         Ok(Response::new(response))
     }
 
     async fn watch_prices(
         &self,
-        request: Request<RouteRequest>,
+        _request: Request<RouteRequest>,
     ) -> Result<Response<Self::WatchPricesStream>, Status> {
         tracing::info!("[RPC Server] Establishing WatchPrices stream channel");
-
-        let RouteRequest { route_id } = request.into_inner();
-
-        let route = entities::route::Entity::find_by_id(route_id.clone())
-            .one(&self.database)
-            .await
-            .map_err(|_| Status::internal("Database check failed"))?
-            .ok_or(Status::not_found("Route not found"))?;
-
-        let route = format!("{}-{}", route.from, route.to);
-
         let (tx, rx) = tokio::sync::mpsc::channel(128); // В продакшене размер буфера берут с запасом
-
+        let database = self.database.clone();
         tokio::spawn(async move {
-            let mut current_price = 500.0;
-
             loop {
-                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-                current_price -= 5.0;
-
-                let update = PriceUpdate {
-                    route: route.clone(),
-                    current_price,
+                let now = Utc::now() - Duration::seconds(5);
+                let routes = entities::route::Entity::find()
+                    // updated_at > now - 5s
+                    .filter(entities::route::Column::UpdatedAt.gt(now))
+                    .all(&database)
+                    .await
+                    .map_err(|_| Status::internal("Database check failed"));
+                let routes = match routes {
+                    Ok(routes) => routes,
+                    Err(e) => {
+                        tracing::info!("[RPC Stream] Database connection receive error {e}");
+                        break;
+                    }
                 };
 
-                if tx.send(Ok(update)).await.is_err() {
-                    tracing::info!("[RPC Stream] Stream connection closed by remote peer");
-                    break;
+                for entities::route::Model {id, from, to, current_price, ..} in routes {
+                    let route = format!("{from}-{to}");
+                    let update = PriceUpdate {
+                        route_id: id,
+                        route,
+                        current_price,
+                    };
+
+                    if tx.send(Ok(update)).await.is_err() {
+                        tracing::info!("[RPC Stream] Stream connection closed by remote peer");
+                        break;
+                    }
                 }
             }
         });

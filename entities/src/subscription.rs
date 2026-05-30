@@ -1,36 +1,38 @@
-use chrono::{Utc, DateTime};
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "users")]
+#[sea_orm(table_name = "subscription")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: i32,
-    pub from: String,
-    pub to: String,
-    pub current_price: f32,
-    pub updated_at: DateTime<Utc>
+    pub user_id: i32,
+    #[sea_orm(primary_key, auto_increment = false)]
+    pub subscription_type: SubscriptionType,
+    pub enabled: bool
 }
+
 
 #[derive(EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq)]
 #[sea_orm(rs_type = "i32", db_type = "Integer")]
 #[repr(i32)]
-pub enum Role {
-    User = 1,
-    Admin = 2
+pub enum SubscriptionType {
+    Telegram = 1,
+    Email = 2,
+    Sms = 3
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        has_many = "super::alert::Entity"
+        belongs_to = "super::user::Entity",
+        from = "Column::UserId",
+        to = "super::user::Column::Id"
     )]
-    Alerts,
+    Users,
 }
 
-impl Related<super::alert::Entity> for Entity {
+impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Alerts.def()
+        Relation::Users.def()
     }
 }
 
