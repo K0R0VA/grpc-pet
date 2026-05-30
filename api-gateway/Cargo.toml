@@ -4,4 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = { version = "0.8.9" }
+axum = { version = "0.8" }
+serde_json = "1"
+tonic.workspace = true
+tokio.workspace = true
+tokio-stream.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde.workspace = true
+utils = { path = "../utils"}
+proto-hub = { path = "../proto-hub" }

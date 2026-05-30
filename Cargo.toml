@@ -3,10 +3,21 @@ resolver = "3"
 members = [
     "api-gateway",
     "tracking-service",
+    "auth-service",
     "notification-service",
-    "proto-hub"
+    "proto-hub",
+    "entities",
+    "migration",
+    "utils", 
 ]
 
 [workspace.dependencies]
+sea-orm = "1.1"
 tonic = { version = "0.14", features = ["codegen", "transport", "server"] }
 tokio = { version = "1", features = ["full"]}
+tokio-stream = { version = "0.1"}
+tracing = "0.1"
+tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+serde = { version = "1", features = ["derive"] }
+chrono = { version = "0.4" }
+hex = "0.4"

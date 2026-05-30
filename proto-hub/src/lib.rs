@@ -1,3 +1,7 @@
-pub mod api {
-    tonic::include_proto!("low_fare");
+pub mod tracking {
+    tonic::include_proto!("tracking");
+}
+
+pub mod auth {
+    tonic::include_proto!("auth");
 }
