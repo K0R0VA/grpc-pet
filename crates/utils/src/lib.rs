@@ -1,4 +1,5 @@
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use redis::RedisError;
 use serde::{Deserialize, Serialize};
 
 use crate::Error::EnvVar;
@@ -11,6 +12,8 @@ pub enum Error {
     Tonic(#[from] tonic::transport::Error),
     #[error(transparent)]
     Postgres(#[from] sea_orm::DbErr),
+    #[error(transparent)]
+    Redis(#[from] RedisError),
     #[error(transparent)]
     Jwt (#[from] jsonwebtoken::errors::Error),
     #[error(transparent)]

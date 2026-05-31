@@ -6,9 +6,10 @@ edition = "2024"
 [dependencies]
 thiserror = "2"
 jsonwebtoken = "10"
-rand = "0.8"
+rand = "0.10"
 serde.workspace = true
 hex.workspace = true
 chrono.workspace = true
 sea-orm.workspace = true
 tonic.workspace = true
+redis.workspace = true

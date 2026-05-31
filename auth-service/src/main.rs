@@ -2,9 +2,10 @@ use proto_hub::auth::auth_service_server::AuthServiceServer;
 use tonic::transport::Server;
 use utils::Error;
 
-use crate::service::AuthController;
+use crate::{rate_limiter::RateLimiter, service::AuthController};
 
 mod service;
+mod rate_limiter;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -20,7 +21,7 @@ async fn main() -> Result<(), Error> {
 
     // Запускаем сетевой стек Tonic
     Server::builder()
-        .add_service(AuthServiceServer::new(auth_service))
+        .add_service(AuthServiceServer::with_interceptor(auth_service, RateLimiter::new()?))
         .add_service(reflection_service)
         .serve(addr)
         .await?;
