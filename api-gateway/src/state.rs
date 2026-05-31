@@ -1,7 +1,10 @@
+use std::net::SocketAddr;
+
 use proto_hub::auth::{AuthRequest, AuthResponse};
 use proto_hub::auth::auth_service_client::AuthServiceClient;
 use proto_hub::tracking::{AlertRequest, AlertResponse};
 use proto_hub::tracking::tracking_service_client::TrackingServiceClient;
+use tonic::metadata::MetadataValue;
 use utils::{Error, JwtKey};
 
 
@@ -33,13 +36,17 @@ impl AppState {
         let response = self.tracking_client.add_alert(request).await?;
         Ok(response.into_inner())
     }
-    pub async fn login(mut self, request: AuthRequest) -> Result<AuthResponse, tonic::Status> {
-        let request = tonic::Request::new(request);
+    pub async fn login(mut self, request: AuthRequest, socket_addr: SocketAddr) -> Result<AuthResponse, tonic::Status> {
+        let mut request = tonic::Request::new(request);
+        let value = MetadataValue::from_bytes(socket_addr.to_string().as_bytes());
+        request.metadata_mut().insert_bin("x-forwarded-for", value);
         let response = self.auth_client.login(request).await?;
         Ok(response.into_inner())
     }
-    pub async fn register(mut self, request: AuthRequest) -> Result<AuthResponse, tonic::Status> {
-        let request = tonic::Request::new(request);
+    pub async fn register(mut self, request: AuthRequest, socket_addr: SocketAddr) -> Result<AuthResponse, tonic::Status> {
+        let mut request = tonic::Request::new(request);
+        let value = MetadataValue::from_bytes(socket_addr.to_string().as_bytes());
+        request.metadata_mut().insert_bin("x-forwarded-for", value);
         let response = self.auth_client.register(request).await?;
         Ok(response.into_inner())
     }
