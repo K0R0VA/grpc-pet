@@ -5,10 +5,11 @@ members = [
     "tracking-service",
     "auth-service",
     "notification-service",
-    "proto-hub",
-    "entities",
     "migration",
-    "utils", "telegram-service", "price-receiver-service", 
+    "telegram-service", 
+    "crates/proto-hub",
+    "crates/utils", 
+    "crates/entities",
 ]
 
 [workspace.dependencies]

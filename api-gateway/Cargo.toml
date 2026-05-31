@@ -12,5 +12,5 @@ tokio-stream.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 serde.workspace = true
-utils = { path = "../utils"}
-proto-hub = { path = "../proto-hub" }
+utils = { path = "../crates/utils"}
+proto-hub = { path = "../crates/proto-hub" }

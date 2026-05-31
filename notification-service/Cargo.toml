@@ -12,6 +12,6 @@ serde_json.workspace = true
 chrono.workspace = true
 sea-orm.workspace = true
 rdkafka.workspace = true
-entities = { path = "../entities" }
-utils = { path = "../utils" }
-proto-hub = { path = "../proto-hub" }
+entities = { path = "../crates/entities" }
+utils = { path = "../crates/utils" }
+proto-hub = { path = "../crates/proto-hub" }

@@ -13,6 +13,6 @@ chrono.workspace = true
 sea-orm.workspace = true
 rdkafka.workspace = true
 teloxide = { version = "0.13", features = ["macros"] }
-entities = { path = "../entities" }
-utils = { path = "../utils" }
-proto-hub = { path = "../proto-hub" }
+entities = { path = "../crates/entities" }
+utils = { path = "../crates/utils" }
+proto-hub = { path = "../crates/proto-hub" }
