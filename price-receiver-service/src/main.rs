@@ -11,12 +11,16 @@ async fn main() -> Result<(), Error> {
     // Адрес, на котором сервер будет слушать входящие HTTP/2 запросы
     let addr = "[::1]:50053".parse().expect("failed parse addr");
     let price_receiver = PriceReceiver::initiate().await?;
-
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(proto_hub::price_receiver::FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .expect("create reflection_service failed");
     tracing::info!("gRPC Сервер обновления цен запущен на {}", addr);
 
     // Запускаем сетевой стек Tonic
     Server::builder()
         .add_service(PriceReceiverServiceServer::new(price_receiver))
+        .add_service(reflection_service)
         .serve(addr)
         .await?;
 

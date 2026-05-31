@@ -12,6 +12,7 @@ tokio-stream.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 sea-orm.workspace = true
+tonic-reflection.workspace = true
 proto-hub = { path = "../crates/proto-hub" }
 entities = { path = "../crates/entities" }
 utils = { path = "../crates/utils" }
